@@ -46,17 +46,29 @@ app.post("/score", async (req, res) => {
     }
 
     const col = await getCollection();
-    await col.updateOne(
-      { username },
+    const updated = await col.updateOne(
+      { username, score: { $lt: score } },
       {
         $set: {
           username,
           score,
           updated_at: new Date()
         }
-      },
-      { upsert: true }
+      }
     );
+    if (updated.matchedCount === 0) {
+      await col.updateOne(
+        { username },
+        {
+          $setOnInsert: {
+            username,
+            score,
+            updated_at: new Date()
+          }
+        },
+        { upsert: true }
+      );
+    }
 
     return res.json({ ok: true });
   } catch (err) {
